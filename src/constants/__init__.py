@@ -36,7 +36,7 @@ DATA_INGESTION_FEATURE_STORE_DIR: str = "feature_store"
 # ---------------------- Data Validation ----------------------
 DATA_VALIDATION_DIR_NAME: str = "data_validation"
 DATA_VALIDATION_REPORT_FILE_NAME: str = "report.yaml"
-
+INVALID_RECORD_LOG_FILE = "invalid_records.csv"
 # ---------------------- Data Transformation ----------------------
 DATA_TRANSFORMATION_DIR_NAME: str = "data_transformation"
 DATA_TRANSFORMATION_TRANSFORMED_DATA_DIR: str = "transformed"
