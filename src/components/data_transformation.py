@@ -1,84 +1,84 @@
 import os
 import sys
+import pickle
+import numpy as np
+from typing import Tuple, Iterator, Dict, Any
+from sklearn.preprocessing import StandardScaler
 
-from pandas import DataFrame
-from sklearn.model_selection import train_test_split
-
-from src.entity.config_entity import DataIngestionConfig
-from src.entity.artifact_entity import DataIngestionArtifact
-from src.exception import MyException
+from src.entity.config_entity import DataTransformationConfig
+from src.entity.artifact_entity import DataValidationArtifact, DataTransformationArtifact
 from src.logger import logging
-from src.data_access.credit_data import creditcarddata
+from src.exception import MyException
 
 
-class DataIngestion:
-    def __init__(self, data_ingestion_config: DataIngestionConfig = DataIngestionConfig()):
+class DataTransformer:
+    def __init__(self, config: DataTransformationConfig):
+        self.config = config
+        self.scaler = StandardScaler()
+
         try:
-            self.data_ingestion_config = data_ingestion_config
+            os.makedirs(self.config.transformed_data_dir, exist_ok=True)
         except Exception as e:
             raise MyException(e, sys)
 
-    def export_data_into_feature_store(self) -> DataFrame:
+    def fit_transform_stream(
+        self, validated_stream: Iterator[Tuple[Dict[str, Any], int]]
+    ) -> Tuple[Iterator[Tuple[np.ndarray, int]], StandardScaler]:
+        """
+        Fits a StandardScaler and transforms the stream.
+        """
         try:
-            logging.info(f"Exporting data from MongoDB")
-            my_data = creditcarddata()
-            dataframe = my_data.export_collection_as_dataframe(
-                collection_name=self.data_ingestion_config.collection_name
-            )
+            # Convert stream to list to fit scaler
+            data_list, label_list = [], []
 
-            logging.info(f"Shape of dataframe: {dataframe.shape}")
-            feature_store_file_path = self.data_ingestion_config.feature_store_file_path
-            dir_path = os.path.dirname(feature_store_file_path)
-            os.makedirs(dir_path, exist_ok=True)
+            for x, y in validated_stream:
+                data_list.append(list(x.values()))
+                label_list.append(y)
 
-            logging.info(f"Saving exported data into feature store file path: {feature_store_file_path}")
-            dataframe.to_csv(feature_store_file_path, index=False, header=True)
-            return dataframe
+            data_array = np.array(data_list)
+            labels = np.array(label_list)
+
+            # Fit scaler
+            logging.info("Fitting StandardScaler...")
+            self.scaler.fit(data_array)
+            transformed = self.scaler.transform(data_array)
+
+            # Reshape if needed (e.g., for neural nets)
+            transformed = transformed.reshape(transformed.shape[0], -1)
+
+            # Save the fitted scaler
+            with open(self.config.scaler_path, "wb") as f:
+                pickle.dump(self.scaler, f)
+                logging.info(f"Scaler saved at: {self.config.scaler_path}")
+
+            # Return transformed as a generator
+            def generator():
+                for x, y in zip(transformed, labels):
+                    yield x, y
+
+            return generator(), self.scaler
 
         except Exception as e:
             raise MyException(e, sys)
 
-    def split_data_as_train_test(self, dataframe: DataFrame) -> None:
-        logging.info("Entered split_data_as_train_test method of Data_Ingestion class")
+    def run_transformation(
+        self, validation_artifact: DataValidationArtifact
+    ) -> DataTransformationArtifact:
+        """
+        Executes transformation and returns the final DataTransformationArtifact.
+        """
         try:
-            if dataframe.empty:
-                raise MyException("DataFrame is empty. Cannot perform train-test split.", sys)
-
-            train_set, test_set = train_test_split(
-                dataframe,
-                test_size=self.data_ingestion_config.train_test_split_ratio
-            )
-            logging.info("Performed train-test split on the dataframe")
-            logging.info("Exited split_data_as_train_test method of Data_Ingestion class")
-
-            dir_path = os.path.dirname(self.data_ingestion_config.training_file_path)
-            os.makedirs(dir_path, exist_ok=True)
-
-            logging.info("Exporting train and test file path")
-            train_set.to_csv(self.data_ingestion_config.training_file_path, index=False, header=True)
-            test_set.to_csv(self.data_ingestion_config.testing_file_path, index=False, header=True)
-            logging.info("Exported train and test file path")
-
-        except Exception as e:
-            raise MyException(e, sys) from e
-
-    def initiate_data_ingestion(self) -> DataIngestionArtifact:
-        logging.info("Entered initiate_data_ingestion method of Data_Ingestion class")
-        try:
-            dataframe = self.export_data_into_feature_store()
-            logging.info("Got the data from MongoDB")
-
-            self.split_data_as_train_test(dataframe)
-            logging.info("Performed train-test split on the dataset")
-            logging.info("Exited initiate_data_ingestion method of Data_Ingestion class")
-
-            data_ingestion_artifact = DataIngestionArtifact(
-                trained_file_path=self.data_ingestion_config.training_file_path,
-                test_file_path=self.data_ingestion_config.testing_file_path
+            logging.info("Starting data transformation...")
+            transformed_stream, scaler = self.fit_transform_stream(
+                validation_artifact.validated_stream
             )
 
-            logging.info(f"Data ingestion artifact: {data_ingestion_artifact}")
-            return data_ingestion_artifact
+            artifact = DataTransformationArtifact(
+                transformed_stream=transformed_stream,
+                scaler_path=self.config.scaler_path
+            )
+            logging.info("Data transformation completed successfully.")
+            return artifact
 
         except Exception as e:
-            raise MyException(e, sys) from e
+            raise MyException(e, sys)

@@ -52,3 +52,24 @@ class DataValidationConfig:
             self.data_validation_dir,
             INVALID_RECORD_LOG_FILE
         )
+
+
+@dataclass
+class DataTransformationConfig:
+    data_transformation_dir: str = field(init=False)
+    transformed_data_dir: str = field(init=False)
+    scaler_path: str = field(init=False)
+
+    def __post_init__(self):
+        self.data_transformation_dir = os.path.join(
+            training_pipeline_config.artifact_dir,
+            DATA_TRANSFORMATION_DIR_NAME
+        )
+        self.transformed_data_dir = os.path.join(
+            self.data_transformation_dir,
+            "transformed_data"
+        )
+        self.scaler_path = os.path.join(
+            self.data_transformation_dir,
+            "scaler.pkl"
+        )

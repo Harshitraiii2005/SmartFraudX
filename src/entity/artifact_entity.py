@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Iterator, Tuple, Dict, Any, Optional
-
+import numpy as np
 
 @dataclass
 class DataIngestionArtifact:
@@ -12,3 +12,8 @@ class DataValidationArtifact:
     validated_stream: Iterator[Tuple[Dict[str, Any], int]]
     validation_report: Dict[str, int]
     invalid_log_file_path: str
+
+@dataclass
+class DataTransformationArtifact:
+    transformed_stream: Iterator[Tuple[np.ndarray, int]]
+    scaler_path: str 
