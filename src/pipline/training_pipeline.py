@@ -7,17 +7,20 @@ from src.logger import logging
 from src.components.data_ingestion import DataIngestion
 from src.components.data_validation import DataValidator
 from src.components.data_transformation import DataTransformer
+from src.components.model_trainer import ModelTrainer
 
 from src.entity.config_entity import (
     DataIngestionConfig,
     DataValidationConfig,
-    DataTransformationConfig
+    DataTransformationConfig,
+    ModelTrainerConfig
 )
 
 from src.entity.artifact_entity import (
     DataIngestionArtifact,
     DataValidationArtifact,
-    DataTransformationArtifact
+    DataTransformationArtifact,
+    ModelTrainerArtifact
 )
 
 
@@ -26,6 +29,7 @@ class TrainPipeline:
         self.data_ingestion_config = DataIngestionConfig()
         self.data_validation_config = DataValidationConfig()
         self.data_transformation_config = DataTransformationConfig()
+        self.model_trainer_config = ModelTrainerConfig()
 
     def start_data_ingestion(self) -> DataIngestionArtifact:
         try:
@@ -37,9 +41,7 @@ class TrainPipeline:
         except Exception as e:
             raise MyException(e, sys)
 
-    def start_data_validation(
-        self, data_ingestion_artifact: DataIngestionArtifact
-    ) -> DataValidationArtifact:
+    def start_data_validation(self, data_ingestion_artifact: DataIngestionArtifact) -> DataValidationArtifact:
         try:
             logging.info("Entering the data validation stage")
             data_validator = DataValidator(config=self.data_validation_config)
@@ -51,9 +53,7 @@ class TrainPipeline:
         except Exception as e:
             raise MyException(e, sys)
 
-    def start_data_transformation(
-        self, data_validation_artifact: DataValidationArtifact
-    ) -> DataTransformationArtifact:
+    def start_data_transformation(self, data_validation_artifact: DataValidationArtifact) -> DataTransformationArtifact:
         try:
             logging.info("Entering the data transformation stage")
             data_transformer = DataTransformer(config=self.data_transformation_config)
@@ -65,25 +65,49 @@ class TrainPipeline:
         except Exception as e:
             raise MyException(e, sys)
 
-    def run_pipeline(self) -> None:
+    def start_model_trainer(self, data_validation_artifact: DataValidationArtifact) -> ModelTrainerArtifact:
         try:
-            # Step 1: Ingest data
-            data_ingestion_artifact = self.start_data_ingestion()
-
-            # Debug peek into stream
-            stream_debug, stream_validate = tee(data_ingestion_artifact.data_stream)
-            sample = list(islice(stream_debug, 2))
-            print("\n🔍 DEBUG: Peeking into data stream from ingestion...")
-            print(f"🧾 First 1-2 records:\n{sample}\n")
-            data_ingestion_artifact.data_stream = stream_validate
-
-            # Step 2: Validate data
-            data_validation_artifact = self.start_data_validation(data_ingestion_artifact)
-
-            # Step 3: Transform data
-            data_transformation_artifact = self.start_data_transformation(data_validation_artifact)
-
-            # (Next step can be model training, prediction, etc.)
-
+            logging.info("Entering the model training stage")
+            model_trainer = ModelTrainer(
+                config=self.model_trainer_config,
+                validation_artifact=data_validation_artifact
+            )
+            model_trainer_artifact = model_trainer.train_model()
+            logging.info("Model training completed successfully")
+            return model_trainer_artifact
         except Exception as e:
             raise MyException(e, sys)
+
+    def run_pipeline(self) -> None:
+     try:
+        # Step 1: Ingest data
+        data_ingestion_artifact = self.start_data_ingestion()
+
+        # DEBUG: Peek at sample
+        stream_debug, stream_validate = tee(data_ingestion_artifact.data_stream)
+        sample = list(islice(stream_debug, 2))
+        print("\n🔍 DEBUG: Peeking into data stream from ingestion...")
+        print(f"🧾 First 1-2 records:\n{sample}\n")
+        data_ingestion_artifact.data_stream = stream_validate
+
+        # Step 2: Validate
+        data_validation_artifact = self.start_data_validation(data_ingestion_artifact)
+
+        # 🛠️ Duplicate the stream for transformation and training
+        stream_transform, stream_train = tee(data_validation_artifact.validated_stream)
+        data_validation_artifact.validated_stream = stream_transform
+
+        # Step 3: Transform
+        data_transformation_artifact = self.start_data_transformation(data_validation_artifact)
+
+        # Step 4: Train Model → using fresh stream
+        data_validation_artifact.validated_stream = stream_train
+        model_trainer_artifact = self.start_model_trainer(data_validation_artifact)
+
+        # Final output
+        print(f"✅ Model Training Completed → Best Model: {model_trainer_artifact.best_model_name}")
+        print(f"📈 Best Score: {model_trainer_artifact.best_score:.4f}")
+
+     except Exception as e:
+        raise MyException(e, sys)
+

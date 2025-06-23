@@ -1,9 +1,27 @@
+from dataclasses import dataclass, field
 import os
-from src.constants import *
-from dataclasses import dataclass,field
 from datetime import datetime
 
-# Timestamp to create unique pipeline runs
+from src.constants import (
+    PIPELINE_NAME,
+    ARTIFACT_DIR,
+    DATA_INGESTION_DIR_NAME,
+    DATA_INGESTION_FEATURE_STORE_DIR,
+    FILE_NAME,
+    DATA_INGESTION_COLLECTION_NAME,
+    DATA_VALIDATION_DIR_NAME,
+    DATA_VALIDATION_REPORT_FILE_NAME,
+    INVALID_RECORD_LOG_FILE,
+    DATA_TRANSFORMATION_DIR_NAME,
+    SCALER_FILE_NAME,
+    MODEL_TRAINER_DIR_NAME,
+    MODEL_FILE_NAME,
+    SCHEMA_FILE_PATH
+)
+
+from src.utils.common import read_yaml
+
+# Timestamp for unique run
 TIMESTAMP: str = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
 
 
@@ -71,5 +89,28 @@ class DataTransformationConfig:
         )
         self.scaler_path = os.path.join(
             self.data_transformation_dir,
-            "scaler.pkl"
+            SCALER_FILE_NAME
         )
+
+
+@dataclass
+class ModelTrainerConfig:
+    model_trainer_dir: str = field(init=False)
+    model_path: str = field(init=False)
+    scaler_path: str = field(init=False)
+    hyperparams: dict = field(init=False)
+
+    def __post_init__(self):
+        self.model_trainer_dir = os.path.join(
+            training_pipeline_config.artifact_dir,
+            MODEL_TRAINER_DIR_NAME
+        )
+        self.model_path = os.path.join(self.model_trainer_dir, MODEL_FILE_NAME)
+        self.scaler_path = os.path.join(
+            training_pipeline_config.artifact_dir,
+            DATA_TRANSFORMATION_DIR_NAME,
+            SCALER_FILE_NAME
+        )
+
+        schema_config = read_yaml(SCHEMA_FILE_PATH)
+        self.hyperparams = schema_config.get("model_selection", {})
