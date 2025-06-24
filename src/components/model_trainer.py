@@ -7,27 +7,30 @@ from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import classification_report, accuracy_score
+import yaml
+from typing import Any
 
-from src.entity.artifact_entity import DataValidationArtifact, ModelTrainerArtifact
+from src.entity.artifact_entity import DataTransformationArtifact, ModelTrainerArtifact
 from src.entity.config_entity import ModelTrainerConfig
 from src.exception import MyException
 from src.logger import logging
 
 
 class ModelTrainer:
-    def __init__(self, config: ModelTrainerConfig, validation_artifact: DataValidationArtifact):
+    def __init__(self, config: ModelTrainerConfig, transformation_artifact: DataTransformationArtifact):
         self.config = config
-        self.validation_artifact = validation_artifact
+        self.transformation_artifact = transformation_artifact
 
     def load_data(self) -> Tuple[np.ndarray, np.ndarray]:
-        try:
-            X, y = [], []
-            for features, label in self.validation_artifact.validated_stream:
-                X.append(list(features.values()))
-                y.append(label)
-            return np.array(X), np.array(y)
-        except Exception as e:
-            raise MyException(e, sys)
+     try:
+        X, y = [], []
+        for features, label in self.transformation_artifact.transformed_stream:
+            X.append(features)  # Either a list or numpy array
+            y.append(label)
+        return np.array(X), np.array(y)
+     except Exception as e:
+        raise MyException(e, sys)
+
 
     def train_model(self) -> ModelTrainerArtifact:
         try:
@@ -69,6 +72,6 @@ class ModelTrainer:
                 best_score=best_score,
                 training_metrics=report
             )
+
         except Exception as e:
             raise MyException(e, sys)
-
