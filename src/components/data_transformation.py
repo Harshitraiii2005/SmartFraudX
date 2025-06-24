@@ -40,8 +40,7 @@ class DataTransformer:
                                 features = dict(features)
 
                         # First transform, then learn
-                        scaled_features = dict(self.scaler.transform_one(features))
-                        scaled_features = dict(scaled_features)  # Convert from VectorDict to regular dict
+                        scaled_features = self.scaler.transform_one(features)
                         scaled_features = {k: float(v) for k, v in scaled_features.items()}
 
                         # Important: Update scaler for next sample

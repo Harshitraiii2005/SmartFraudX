@@ -30,5 +30,4 @@ class ModelTrainerArtifact:
     scaler_path: Optional[str]  # Optional if not reused later
     best_model_name: str
     best_score: float
-    scaler_path: Optional[str] = None
     training_metrics: Dict[str, Dict[str, float]]  # e.g., {'0': {'precision': 0.9, ...}, '1': {...}}
