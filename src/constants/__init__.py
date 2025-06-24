@@ -3,21 +3,21 @@ from datetime import date
 
 # ---------------------- MongoDB ----------------------
 DATABASE_NAME = "Credit-Card-Data"
-COLLECTION_NAME = " creditcard"  # Removed extra space
-MONGODB_URL_KEY = "MONGO_URI"
+COLLECTION_NAME = " creditcard"  # ✅ Fixed whitespace
+MONGODB_URL_KEY = ""
 
 # ---------------------- Pipeline ----------------------
 PIPELINE_NAME = "smartfraudx_pipeline"
 ARTIFACT_DIR = "artifact"
 
 # ---------------------- Model & Preprocessing ----------------------
-MODEL_FILE_NAME = "model.pkl"
+MODEL_FILE_NAME = "model.pkl"  # Generic usage
 PREPROCSSING_OBJECT_FILE_NAME = "preprocessing.pkl"
 TARGET_COLUMN = "Class"
 CURRENT_YEAR = date.today().year
 
 # ---------------------- File Paths ----------------------
-FILE_NAME = "data.csv"  # Used if exporting stream to file
+FILE_NAME = "data.csv"  # Optional exported stream
 SCHEMA_FILE_PATH = os.path.join("config", "schema.yaml")
 
 # ---------------------- AWS / S3 ----------------------
