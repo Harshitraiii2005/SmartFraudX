@@ -58,19 +58,20 @@ class ModelTrainer:
                 continue
 
         final_accuracy = accuracy.get()
-        logging.info(f"✅ Training completed. Final Accuracy: {final_accuracy:.4f}")
+        logging.info(f"Training completed. Final Accuracy: {final_accuracy:.4f}")
 
         os.makedirs(self.config.model_trainer_dir, exist_ok=True)
         joblib.dump(model, self.config.model_path)
-        logging.info(f"💾 Model saved at: {self.config.model_path}")
+        logging.info(f"Model saved at: {self.config.model_path}")
 
         return ModelTrainerArtifact(
             model_path=self.config.model_path,
             scaler_path=self.transformation_artifact.scaler_path,
             best_model_name="RiverLogisticRegression",
             best_score=final_accuracy,
-            training_metrics=report.to_dict()
+            training_metrics=str(report)
         )
 
      except Exception as e:
         raise MyException(e, sys)
+
