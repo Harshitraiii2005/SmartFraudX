@@ -21,6 +21,7 @@ class DataValidationArtifact:
 class DataTransformationArtifact:
     transformed_stream: Iterator[Tuple[Dict[str, float], int]]  # River prefers dict, not np.ndarray
     scaler_path: str
+    
 
 
 # Output of model training
