@@ -1,12 +1,17 @@
 import sys
 from typing import Iterator, Tuple, Dict, Any
 from pymongo.errors import PyMongoError
+
 from src.configuration.mongo_db_connection import MongoDBClient
 from src.constants import DATABASE_NAME
 from src.exception import MyException
 
+
 class CreditData:
     def __init__(self) -> None:
+        """
+        Initialize MongoDB client connection.
+        """
         try:
             self.mongo_client = MongoDBClient(database_name=DATABASE_NAME)
         except Exception as e:
@@ -25,10 +30,20 @@ class CreditData:
             cursor = collection.find({}, batch_size=100)
 
             for doc in cursor:
-                if "Class" not in doc:
+                # Ensure the target field exists
+                if "IsFraud" not in doc:
                     continue
-                y = doc["Class"]
-                x = {k: v for k, v in doc.items() if k not in ["_id", "Class", "Time"]}
+
+                # Extract target label
+                y = doc["IsFraud"]
+
+                # Prepare feature dictionary, excluding unwanted fields
+                x = {
+                    k: v
+                    for k, v in doc.items()
+                    if k not in ["_id", "IsFraud", "Time"]
+                }
+
                 yield x, y
 
         except PyMongoError as e:

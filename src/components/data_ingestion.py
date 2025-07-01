@@ -34,7 +34,11 @@ class DataIngestion:
             data_stream = self.stream_data_from_mongo()
 
             data_ingestion_artifact = DataIngestionArtifact(
-                data_stream=data_stream
+                data_stream=data_stream,
+                feature_store_file_path="",          
+                train_file_path="",                  
+                test_file_path="",                   
+                streaming_data_generator=data_stream
             )
 
             logging.info("DataIngestionArtifact created with streaming generator")

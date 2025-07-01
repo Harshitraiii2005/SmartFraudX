@@ -1,4 +1,4 @@
-from src2.pipeline.model_trainer import TrainingPipeline
+from src2.pipeline.model_trainer import TrainPipeline
 
-pipeline = TrainingPipeline()
+pipeline = TrainPipeline()
 pipeline.run_pipeline()

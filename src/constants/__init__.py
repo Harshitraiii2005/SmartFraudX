@@ -4,7 +4,7 @@ from datetime import date
 # ---------------------- MongoDB ----------------------
 DATABASE_NAME = "Credit-Card-Data"
 COLLECTION_NAME = " creditcard"  # ✅ Fixed whitespace
-MONGODB_URL_KEY = ""
+MONGODB_URL_KEY = "MONGODB_URL_KEY"
 
 # ---------------------- Pipeline ----------------------
 PIPELINE_NAME = "smartfraudx_pipeline"
@@ -19,6 +19,7 @@ CURRENT_YEAR = date.today().year
 # ---------------------- File Paths ----------------------
 FILE_NAME = "data.csv"  # Optional exported stream
 SCHEMA_FILE_PATH = os.path.join("config", "schema.yaml")
+
 
 # ---------------------- AWS / S3 ----------------------
 AWS_ACCESS_KEY_ID_ENV_KEY = "AWS_ACCESS_KEY_ID"
@@ -42,7 +43,8 @@ INVALID_RECORD_LOG_FILE = "invalid_records.csv"
 DATA_TRANSFORMATION_DIR_NAME = "data_transformation"
 DATA_TRANSFORMATION_TRANSFORMED_DATA_DIR = "transformed"
 DATA_TRANSFORMATION_TRANSFORMED_OBJECT_DIR = "transformed_object"
-SCALER_FILE_NAME = "scaler.pkl"
+PIPELINE_FILE_NAME = "pipeline.pkl"
+
 
 # ---------------------- Model Trainer ----------------------
 MODEL_TRAINER_DIR_NAME = "model_trainer"

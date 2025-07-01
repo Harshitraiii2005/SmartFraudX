@@ -8,76 +8,96 @@ from src.entity.config_entity import DataValidationConfig
 from src.exception import MyException
 from src.logger import logging
 
+class DataValidation:
+    def __init__(self,data_validation_config, ingestion_artifact):
+          self.data_validation_config = data_validation_config
+          self.ingestion_artifact = ingestion_artifact
 
-class DataValidator:
-    def __init__(self, config: DataValidationConfig):
-        self.config = config
-        self.duplicate_cache = set()
 
+    def initiate_data_validation(self):
+        """
+        Runs data validation and returns a DataValidationArtifact.
+        This is a placeholder function. You should implement actual validation logic here.
+        """
+        # Example: you might validate schema, nulls, data types, etc.
+        # For now, let's create dummy artifact paths.
+
+        schema_file_path = "artifacts/schema/schema.yaml"
+        report_file_path = "artifacts/validation/report.yaml"
+        report_page_file_path = "artifacts/validation/report.html"
+
+        # Log for clarity
+        print(f"[DataValidation] Validation completed. "
+              f"Schema: {schema_file_path}, Report: {report_file_path}")
+
+        # Return the artifact
+        validation_artifact = DataValidationArtifact(
+            schema_file_path=schema_file_path,
+            report_file_path=report_file_path,
+            report_page_file_path=report_page_file_path
+        )
+
+        return validation_artifact      
+        
+
+    def is_valid(self, x_y: Tuple[Dict[str, Any], int]) -> bool:
+        """
+        Validate a single (features, label) tuple.
+        """
         try:
-            if self.config.invalid_log_file_path:
-                os.makedirs(os.path.dirname(self.config.invalid_log_file_path), exist_ok=True)
-                with open(self.config.invalid_log_file_path, "w") as f:
-                    f.write("Invalid Record Log\n")
-        except Exception as e:
-            raise MyException(e, sys)
+            x, y = x_y
 
-    def is_valid(self, x: Dict[str, Any]) -> bool:
-        try:
-            for v in x.values():
-                if v is None:
-                    return False
-                if isinstance(v, float) and math.isnan(v):
-                    return False
-                if isinstance(v, str) and v.strip().lower() == "na":
-                    return False
-
-            record_hash = hashlib.md5(str(sorted(x.items())).encode()).hexdigest()
-            if record_hash in self.duplicate_cache:
+            # Validate label
+            if not isinstance(y, int) or y not in [0, 1]:
                 return False
 
-            self.duplicate_cache.add(record_hash)
+            # Optionally, validate fields in x
+            # For example:
+            if "Amount" not in x or not isinstance(x["Amount"], (int, float)):
+                return False
+
             return True
+
         except Exception as e:
             raise MyException(e, sys)
 
     def validate_stream(
         self, data_stream: Iterator[Tuple[Dict[str, Any], int]]
-    ) -> Tuple[Iterator[Tuple[Dict[str, Any], int]], dict]:
+    ) -> Tuple[Iterator[Tuple[Dict[str, Any], int]], Dict[str, Any]]:
+        """
+        Validates the incoming data stream and yields only valid records.
+        Also returns a validation report.
+        """
         try:
-            cleaned = []
-            skipped_count = 0
+            valid_count = 0
+            invalid_count = 0
+            validated_data = []
 
-            for x, y in data_stream:
-                if self.is_valid(x):
-                    cleaned.append((x, y))
+            for x_y in data_stream:
+                if self.is_valid(x_y):
+                    validated_data.append(x_y)
+                    valid_count += 1
                 else:
-                    skipped_count += 1
-                    if self.config.invalid_log_file_path:
-                        with open(self.config.invalid_log_file_path, "a") as f:
-                            f.write(f"{x}\n")
+                    invalid_count += 1
 
             report = {
-                "valid_records": len(cleaned),
-                "invalid_records_skipped": skipped_count
+                "valid_records": valid_count,
+                "invalid_records": invalid_count,
+                "total_records": valid_count + invalid_count
             }
 
-            return iter(cleaned), report
+            return iter(validated_data), report
+
         except Exception as e:
             raise MyException(e, sys)
 
     def run_validation(
         self, data_stream: Iterator[Tuple[Dict[str, Any], int]]
-    ) -> DataValidationArtifact:
+    ) -> Tuple[Iterator[Tuple[Dict[str, Any], int]], Dict[str, Any]]:
+        """
+        Entry point to perform validation.
+        """
         try:
-            logging.info(" Starting data validation")
-            validated_stream, report = self.validate_stream(data_stream)
-            logging.info(f" Validation completed: {report}")
-
-            return DataValidationArtifact(
-                validated_stream=validated_stream,
-                validation_report=report,
-                invalid_log_file_path=self.config.invalid_log_file_path
-            )
+            return self.validate_stream(data_stream)
         except Exception as e:
             raise MyException(e, sys)

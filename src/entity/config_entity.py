@@ -13,7 +13,7 @@ from src.constants import (
     DATA_VALIDATION_REPORT_FILE_NAME,
     INVALID_RECORD_LOG_FILE,
     DATA_TRANSFORMATION_DIR_NAME,
-    SCALER_FILE_NAME,
+    PIPELINE_FILE_NAME,
     MODEL_TRAINER_DIR_NAME,
     MODEL_FILE_NAME,
     SCHEMA_FILE_PATH
@@ -21,7 +21,7 @@ from src.constants import (
 
 from src.utils.common import read_yaml
 
-# 🕒 Timestamp for unique pipeline run
+
 TIMESTAMP: str = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
 
 
@@ -32,7 +32,7 @@ class TrainingPipelineConfig:
     timestamp: str = TIMESTAMP
 
 
-# Instantiate globally once
+
 training_pipeline_config: TrainingPipelineConfig = TrainingPipelineConfig()
 
 
@@ -79,20 +79,25 @@ class DataValidationConfig:
 class DataTransformationConfig:
     data_transformation_dir: str = field(init=False)
     transformed_data_dir: str = field(init=False)
-    scaler_path: str = field(init=False)
+    pipeline_path: str = field(init=False)  # renamed from scaler_path
 
     def __post_init__(self):
+        
         self.data_transformation_dir = os.path.join(
             training_pipeline_config.artifact_dir,
             DATA_TRANSFORMATION_DIR_NAME
         )
+
+        
         self.transformed_data_dir = os.path.join(
             self.data_transformation_dir,
             "transformed_data"
         )
-        self.scaler_path = os.path.join(
+
+        
+        self.pipeline_path = os.path.join(
             self.data_transformation_dir,
-            SCALER_FILE_NAME
+            PIPELINE_FILE_NAME
         )
 
 
@@ -100,7 +105,7 @@ class DataTransformationConfig:
 class ModelTrainerConfig:
     model_trainer_dir: str = field(init=False)
     model_path: str = field(init=False)
-    scaler_path: str = field(init=False)
+    pipeline_path: str = field(init=False)  
     hyperparams: dict = field(init=False)
 
     def __post_init__(self):
@@ -112,10 +117,10 @@ class ModelTrainerConfig:
             self.model_trainer_dir,
             MODEL_FILE_NAME
         )
-        self.scaler_path = os.path.join(
+        self.pipeline_path = os.path.join(   
             training_pipeline_config.artifact_dir,
             DATA_TRANSFORMATION_DIR_NAME,
-            SCALER_FILE_NAME
+            PIPELINE_FILE_NAME
         )
 
         schema_config = read_yaml(SCHEMA_FILE_PATH)

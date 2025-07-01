@@ -5,6 +5,8 @@ import numpy as np
 class DataTransformationArtifact:
     x_train: np.ndarray
     y_train: np.ndarray
+    x_val: np.ndarray
+    y_val: np.ndarray
 
 @dataclass
 class ModelTrainerArtifact:
